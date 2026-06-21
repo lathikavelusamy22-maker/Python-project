@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Smart To-Do Pro</title>
+
+<style>
+
+/* BACKGROUND FOR ALL PAGES */
+
+body{
+font-family:Arial;
+margin:0;
+
+/* To-Do workspace background */
+background:url("https://images.unsplash.com/photo-1484480974693-6ca0a78fb36b") no-repeat center center fixed;
+background-size:cover;
+}
+
+/* Overlay for readability */
+
+body::before{
+content:"";
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(255,255,255,0.7);
+z-index:-1;
+}
+
+/* CONTAINER */
+
+.container{
+width:430px;
+margin:auto;
+margin-top:50px;
+background:rgba(255,255,255,0.95);
+padding:25px;
+border-radius:15px;
+box-shadow:0px 10px 25px rgba(0,0,0,0.3);
+}
+
+/* TEXT */
+
+h2{
+text-align:center;
+color:#6c5ce7;
+}
+
+/* INPUTS */
+
+input,select,button{
+width:100%;
+padding:10px;
+margin:6px 0;
+border-radius:6px;
+border:1px solid #ccc;
+}
+
+/* BUTTON */
+
+button{
+background:#6c5ce7;
+color:white;
+border:none;
+cursor:pointer;
+}
+
+button:hover{
+background:#4834d4;
+}
+
+/* TASK LIST */
+
+li{
+background:#f1f2f6;
+margin:10px 0;
+padding:12px;
+border-radius:10px;
+list-style:none;
+}
+
+.taskButtons button{
+width:48%;
+margin-top:5px;
+}
+
+.deleteBtn{
+background:red;
+}
+
+/* STATS */
+
+.stat{
+background:#f1f2f6;
+padding:12px;
+margin:10px;
+border-radius:10px;
+text-align:center;
+}
+
+.quote{
+font-size:18px;
+text-align:center;
+padding:15px;
+}
+
+/* PAGE HIDE */
+
+#todoPage,#dashboardPage,#quotePage,#profilePage,#searchPage{
+display:none;
+}
+
+</style>
+</head>
+
+<body>
+
+<!-- LOGIN -->
+
+<div class="container" id="loginPage">
+<h2>Login</h2>
+<input id="user" placeholder="Username">
+<input type="password" id="pass" placeholder="Password">
+<button onclick="login()">Login</button>
+<p id="error" style="color:red;text-align:center;"></p>
+</div>
+
+<!-- TODO -->
+
+<div class="container" id="todoPage">
+<h2>Smart To-Do List</h2>
+
+<input id="task" placeholder="Enter Task">
+
+<label>Date</label>
+<input type="date" id="date">
+
+<label>Time</label>
+<input type="time" id="time">
+
+<label>Priority</label>
+<select id="priority">
+<option>High</option>
+<option>Low</option>
+</select>
+
+<label>Progress (%)</label>
+<input type="number" id="progress" min="0" max="100">
+
+<button onclick="addTask()">Add Task</button>
+<button onclick="openDashboard()">Dashboard</button>
+<button onclick="openQuotes()">Motivation</button>
+<button onclick="openProfile()">Profile</button>
+<button onclick="openSearch()">Search Tasks</button>
+<button onclick="logout()" style="background:red;">Logout</button>
+
+<ul id="list"></ul>
+
+</div>
+
+<!-- DASHBOARD -->
+
+<div class="container" id="dashboardPage">
+<h2>Dashboard</h2>
+
+<div class="stat">Total : <span id="total"></span></div>
+<div class="stat">High : <span id="high"></span></div>
+<div class="stat">Low : <span id="low"></span></div>
+
+<button onclick="backTodo()">Back</button>
+</div>
+
+<!-- QUOTES -->
+
+<div class="container" id="quotePage">
+<h2>Motivation</h2>
+
+<div class="quote" id="quoteText"></div>
+
+<button onclick="newQuote()">New Quote</button>
+<button onclick="backTodo()">Back</button>
+</div>
+
+<!-- PROFILE -->
+
+<div class="container" id="profilePage">
+<h2>User Profile</h2>
+
+<div class="stat">Username : <span id="profileName"></span></div>
+<div class="stat">Total Tasks : <span id="profileTotal"></span></div>
+<div class="stat">Completed : <span id="profileCompleted"></span></div>
+<div class="stat">Pending : <span id="profilePending"></span></div>
+
+<button onclick="backTodo()">Back</button>
+</div>
+
+<!-- SEARCH -->
+
+<div class="container" id="searchPage">
+<h2>Search Tasks</h2>
+
+<input id="searchInput" placeholder="Search task..." onkeyup="searchTask()">
+
+<ul id="searchList"></ul>
+
+<button onclick="backTodo()">Back</button>
+</div>
+
+<script>
+
+let tasks=[]
+
+let quotes=[
+"Success comes from hard work",
+"Never give up",
+"Dream big work hard",
+"Small progress is still progress",
+"Believe in yourself"
+]
+
+function login(){
+if(user.value=="admin" && pass.value=="1234"){
+loginPage.style.display="none"
+todoPage.style.display="block"
+load()
+}else{
+error.innerHTML="Invalid Login"
+}
+}
+
+function logout(){
+todoPage.style.display="none"
+loginPage.style.display="block"
+}
+
+function addTask(){
+if(task.value==""){
+alert("Enter Task")
+return
+}
+
+tasks.push({
+text:task.value,
+date:date.value || "No date",
+time:time.value || "No time",
+priority:priority.value,
+progress:progress.value || 0
+})
+
+save()
+show()
+
+task.value=""
+date.value=""
+time.value=""
+progress.value=""
+}
+
+function show(){
+list.innerHTML=""
+
+tasks.forEach((t,i)=>{
+
+let li=document.createElement("li")
+
+li.innerHTML=
+"<b>"+t.text+"</b><br>"+
+"Date: "+t.date+"<br>"+
+"Time: "+t.time+"<br>"+
+"Priority: "+t.priority+"<br>"+
+"Progress: "+t.progress+"%"+
+
+"<div class='taskButtons'>"+
+"<button onclick='editTask("+i+")'>Edit</button>"+
+"<button class='deleteBtn' onclick='deleteTask("+i+")'>Delete</button>"+
+"</div>"
+
+list.appendChild(li)
+
+})
+}
+
+function editTask(i){
+let t=tasks[i]
+
+task.value=t.text
+date.value=t.date
+time.value=t.time
+priority.value=t.priority
+progress.value=t.progress
+
+tasks.splice(i,1)
+save()
+show()
+}
+
+function deleteTask(i){
+tasks.splice(i,1)
+save()
+show()
+}
+
+function save(){
+localStorage.setItem("tasks",JSON.stringify(tasks))
+}
+
+function load(){
+let data=localStorage.getItem("tasks")
+if(data){
+tasks=JSON.parse(data)
+show()
+}
+}
+
+function openDashboard(){
+todoPage.style.display="none"
+dashboardPage.style.display="block"
+
+total.innerHTML=tasks.length
+high.innerHTML=tasks.filter(t=>t.priority=="High").length
+low.innerHTML=tasks.filter(t=>t.priority=="Low").length
+}
+
+function openQuotes(){
+todoPage.style.display="none"
+quotePage.style.display="block"
+newQuote()
+}
+
+function newQuote(){
+quoteText.innerHTML=quotes[Math.floor(Math.random()*quotes.length)]
+}
+
+function openProfile(){
+todoPage.style.display="none"
+profilePage.style.display="block"
+
+profileName.innerHTML="admin"
+profileTotal.innerHTML=tasks.length
+profileCompleted.innerHTML=tasks.filter(t=>t.progress==100).length
+profilePending.innerHTML=tasks.filter(t=>t.progress<100).length
+}
+
+function openSearch(){
+todoPage.style.display="none"
+searchPage.style.display="block"
+searchTask()
+}
+
+function searchTask(){
+let key=searchInput.value.toLowerCase()
+searchList.innerHTML=""
+
+tasks.filter(t=>t.text.toLowerCase().includes(key))
+.forEach(t=>{
+let li=document.createElement("li")
+li.innerHTML=
+"<b>"+t.text+"</b><br>"+
+"Date: "+t.date+"<br>"+
+"Time: "+t.time+"<br>"+
+"Priority: "+t.priority+"<br>"+
+"Progress: "+t.progress+"%"
+searchList.appendChild(li)
+})
+}
+
+function backTodo(){
+dashboardPage.style.display="none"
+quotePage.style.display="none"
+profilePage.style.display="none"
+searchPage.style.display="none"
+todoPage.style.display="block"
+}
+
+</script>
+
+</body>
+</html>
