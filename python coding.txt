@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Smart Voter System</title>
+
+<style>
+body{
+    font-family: Arial;
+    margin:0;
+    background: linear-gradient(to right,#ffecd2,#fcb69f);
+    transition:0.5s;
+}
+
+/* DARK MODE */
+.dark{
+    background:#1e1e1e;
+    color:white;
+}
+
+nav{
+    background:#ff7e5f;
+    padding:10px;
+}
+
+nav button{
+    margin:5px;
+}
+
+.container{
+    width:350px;
+    margin:auto;
+    background:white;
+    padding:20px;
+    border-radius:10px;
+    margin-top:30px;
+    transition:0.3s;
+}
+
+.dark .container{
+    background:#333;
+}
+
+input, button{
+    width:90%;
+    padding:10px;
+    margin:8px;
+}
+
+button{
+    background:#ff7e5f;
+    color:white;
+    border:none;
+    cursor:pointer;
+}
+
+.hidden{display:none;}
+
+.success{color:green;}
+.error{color:red;}
+
+/* Fingerprint animation */
+.finger{
+    font-size:50px;
+    animation:pulse 1s infinite;
+}
+@keyframes pulse{
+    0%{transform:scale(1);}
+    50%{transform:scale(1.2);}
+    100%{transform:scale(1);}
+}
+
+/* Face scan box */
+.face-box{
+    width:150px;
+    height:150px;
+    border:3px dashed black;
+    margin:auto;
+    animation:scan 2s infinite;
+}
+@keyframes scan{
+    0%{border-color:red;}
+    50%{border-color:green;}
+    100%{border-color:red;}
+}
+</style>
+
+</head>
+
+<body>
+
+<!-- NAV -->
+<nav>
+<button onclick="showPage('register')">Register</button>
+<button onclick="showPage('login')">Login</button>
+<button onclick="toggleDark()">🌙 Dark</button>
+</nav>
+
+<!-- REGISTER -->
+<div class="container" id="register">
+<h2>Register</h2>
+<input id="name" placeholder="Name">
+<input id="id" placeholder="Voter ID">
+<button onclick="register()">Register</button>
+<p id="regMsg"></p>
+</div>
+
+<!-- LOGIN -->
+<div class="container hidden" id="login">
+<h2>Login</h2>
+<input id="loginID" placeholder="Voter ID">
+<button onclick="login()">Login</button>
+<p id="loginMsg"></p>
+</div>
+
+<!-- OTP -->
+<div class="container hidden" id="otp">
+<h2>OTP Verification</h2>
+<p id="timer"></p>
+<input id="otpInput">
+<button onclick="verifyOTP()">Verify</button>
+<p id="otpMsg"></p>
+</div>
+
+<!-- FACE -->
+<div class="container hidden" id="face">
+<h2>Face Scan</h2>
+<div class="face-box"></div>
+<button onclick="faceScan()">Scan</button>
+<p id="faceMsg"></p>
+</div>
+
+<!-- FINGER -->
+<div class="container hidden" id="finger">
+<h2>Fingerprint</h2>
+<div class="finger">👆</div>
+<button onclick="fingerScan()">Scan Finger</button>
+<p id="fingerMsg"></p>
+</div>
+
+<!-- ADMIN -->
+<div class="container hidden" id="admin">
+<h2>Admin Dashboard</h2>
+
+<input id="search" placeholder="Search ID" onkeyup="searchUser()">
+
+<table border="1" width="100%">
+<tr><th>Name</th><th>ID</th><th>Action</th></tr>
+<tbody id="data"></tbody>
+</table>
+
+</div>
+
+<script>
+
+let users = [];
+let otp = "";
+let attempts = 0;
+let time = 30;
+let timerInterval;
+
+// PAGE SWITCH
+function showPage(page){
+    document.querySelectorAll(".container").forEach(c=>c.classList.add("hidden"));
+    document.getElementById(page).classList.remove("hidden");
+}
+
+// DARK MODE
+function toggleDark(){
+    document.body.classList.toggle("dark");
+}
+
+// REGISTER
+function register(){
+    let name = document.getElementById("name").value;
+    let id = document.getElementById("id").value;
+
+    if(users.find(u=>u.id==id)){
+        regMsg.innerHTML="❌ Duplicate ID!";
+        return;
+    }
+
+    users.push({name,id});
+    regMsg.innerHTML="✅ Registered!";
+}
+
+// LOGIN
+function login(){
+    let id = document.getElementById("loginID").value;
+
+    if(!users.find(u=>u.id==id)){
+        loginMsg.innerHTML="❌ Not Found!";
+        return;
+    }
+
+    otp = Math.floor(1000+Math.random()*9000);
+    alert("OTP: "+otp);
+
+    startTimer();
+    showPage("otp");
+}
+
+// OTP TIMER
+function startTimer(){
+    time = 30;
+    timerInterval = setInterval(()=>{
+        document.getElementById("timer").innerText = "Time: "+time;
+
+        time--;
+        if(time<0){
+            clearInterval(timerInterval);
+            alert("OTP Expired!");
+        }
+    },1000);
+}
+
+// VERIFY OTP
+function verifyOTP(){
+    let val = document.getElementById("otpInput").value;
+
+    if(val != otp){
+        attempts++;
+        otpMsg.innerHTML="❌ Wrong OTP";
+
+        if(attempts>=3){
+            alert("🚫 Fraud detected! Blocked.");
+        }
+        return;
+    }
+
+    clearInterval(timerInterval);
+    showPage("face");
+}
+
+// FACE
+function faceScan(){
+    let ok = Math.random()>0.2;
+
+    if(!ok){
+        faceMsg.innerHTML="❌ Face mismatch";
+        return;
+    }
+
+    faceMsg.innerHTML="✅ Face matched";
+    showPage("finger");
+}
+
+// FINGERPRINT
+function fingerScan(){
+    setTimeout(()=>{
+        fingerMsg.innerHTML="✅ Fingerprint matched";
+        loadAdmin();
+        showPage("admin");
+    },1500);
+}
+
+// ADMIN LOAD
+function loadAdmin(){
+    let table = document.getElementById("data");
+    table.innerHTML="";
+
+    users.forEach((u,i)=>{
+        table.innerHTML += `
+        <tr>
+        <td>${u.name}</td>
+        <td>${u.id}</td>
+        <td>
+        <button onclick="del(${i})">Delete</button>
+        <button onclick="edit(${i})">Edit</button>
+        </td>
+        </tr>`;
+    });
+}
+
+// DELETE
+function del(i){
+    users.splice(i,1);
+    loadAdmin();
+}
+
+// EDIT
+function edit(i){
+    let newName = prompt("New name:");
+    if(newName){
+        users[i].name = newName;
+        loadAdmin();
+    }
+}
+
+// SEARCH
+function searchUser(){
+    let val = document.getElementById("search").value.toLowerCase();
+
+    let rows = document.querySelectorAll("#data tr");
+
+    rows.forEach(r=>{
+        r.style.display = r.innerText.toLowerCase().includes(val) ? "" : "none";
+    });
+}
+
+</script>
+
+</body>
+</html>
